@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
 ```
 
 # Load packages
@@ -14,13 +15,42 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(tidyverse)
 library(lubridate)
+library(readr)
+library(hrbrthemes)
+library(bsts)
+library(ggplot2)
+library(patchwork)
 ```
 
-#Read data
+#Read data (zikang edits)
 ```{r}
-library(readr)
-covid <- read.csv("COVID-19_Daily_Counts.csv")
-crimes <- read.csv("NYPD_Hate_Crimes.csv")
+
+nypd <- read.csv(file.choose(), header = T)
+nypd <- nypd %>% mutate(CMPLNT_FR_DT = mdy(CMPLNT_FR_DT ))
+nypd$CMPLNT_FR_DT<-as.Date(nypd$CMPLNT_FR_DT)  
+
+
+apply(nypd,
+      MARGIN = 2, 
+      FUN = function(x) sum(is.na(x)))
+
+new <- nypd %>% 
+  filter(CMPLNT_FR_DT >= "2018-03-01") %>%
+  dplyr::select(CMPLNT_FR_DT, VIC_RACE,VIC_SEX, PD_DESC, SUSP_RACE, SUSP_SEX,) %>%
+  group_by(CMPLNT_FR_DT, VIC_RACE) %>%
+  count(VIC_RACE)
+
+str(new)
+colnames(new)[1] = "date"
+colnames(new)[2] = "race"
+
+bc <- new %>%
+  filter(date <="2020-03-01")
+ac <- new %>%
+  filter(date > "2020-03-01")
+
+
+
 
 ```
 
