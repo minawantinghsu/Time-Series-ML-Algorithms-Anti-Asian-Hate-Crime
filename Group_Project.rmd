@@ -25,148 +25,70 @@ library(patchwork)
 #Read data (zikang edits)
 ```{r}
 
-nypd <- read.csv(file.choose(), header = T)
+nypd <- read.csv("nypd.csv")
 nypd <- nypd %>% mutate(CMPLNT_FR_DT = mdy(CMPLNT_FR_DT ))
 nypd$CMPLNT_FR_DT<-as.Date(nypd$CMPLNT_FR_DT)  
 
 
-apply(nypd,
-      MARGIN = 2, 
-      FUN = function(x) sum(is.na(x)))
-
-new <- nypd %>% 
-  filter(CMPLNT_FR_DT >= "2018-03-01") %>%
+new<- nypd %>% 
+  filter(CMPLNT_FR_DT >= "2010-03-01") %>%
   dplyr::select(CMPLNT_FR_DT, VIC_RACE) %>%
   group_by(CMPLNT_FR_DT, VIC_RACE) %>%
   count(VIC_RACE)
 
 new$CMPLNT_FR_DT <- format(as.Date(new$CMPLNT_FR_DT), "%Y-%m")
-
 colnames(new)[1] = "date"
 colnames(new)[2] = "race"
 str_trim(new$race, side = "both")
 
-
 new <- new[-which(new$race == ""), ]
 
+
+
+```
+
+#before & after covid
+
+```{r}
+#bc = 10 years period before covid 
 bc <- new %>%
   filter(date <"2020-03") %>%
   group_by(date) %>%
   count(race)
 
+#ac = after covid from 2020-03 to 2021-12-31
 ac <- new %>%
   filter(date >= "2020-03") %>%
   group_by(date) %>%
   count(race)
-
-
-
-
 ```
 
-#Clean data
+#pivot_wider
 ```{r}
-covid <- read.csv(file.choose(), header = T)
-str(covid)
-apply(covid,
-      MARGIN = 2, 
-      FUN = function(x) sum(is.na(x)))
+ac <- ac %>% pivot_wider(names_from = race, values_from = n)
+bc <- bc %>% pivot_wider(names_from = race, values_from = n)
+
+ac[is.na(ac)] = 0
+bc[is.na(bc)] = 0
 ```
-Data parsing - covid
 
+#create asian/non-asian
 ```{r}
-covid <- covid %>% select(c(1:11)) %>% mutate(DATE_OF_INTEREST = mdy(DATE_OF_INTEREST ))
-covid <- covid %>% filter(DATE_OF_INTEREST <= "2021-12-31")
-
-summary(covid)
-
-#covid[['month_year']] <- strptime(covid[['DATE_OF_INTEREST']],
-                                            # format = "%Y-%m-%d")
-covid$Month_Yr <- format(as.Date(covid$DATE_OF_INTEREST), "%Y-%m")
-covid_monthly = aggregate(x = (case_count = covid$CASE_COUNT), by=list(Month_Yr=covid$Month_Yr), FUN=sum)
-covid_monthly[nrow(covid_monthly) + 1,] <- c("2020-01", 0)
-covid_monthly
-
-covid$Month_Yr <- format(as.Date(covid$DATE_OF_INTEREST), "%Y-%m")
+ac$non_asian <- rowSums(ac[,c("BLACK", "BLACK HISPANIC", "UNKNOWN", "WHITE", "WHITE HISPANIC", "AMERICAN INDIAN/ALASKAN NATIVE")])
+bc$non_asian <- rowSums(bc[,c("BLACK", "BLACK HISPANIC", "UNKNOWN", "WHITE", "WHITE HISPANIC", "AMERICAN INDIAN/ALASKAN NATIVE")])
 ```
 
 ```{r}
-apply(covid,
-      MARGIN = 2, 
-      FUN = function(x) sum(is.na(x)))
-
+ac <- ac %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, non_asian)
+bc <- bc %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, non_asian)
 ```
 
+
+#before covid correlation
 ```{r}
-str(crimes)
-summary(crimes) 
+cor(bc$`ASIAN / PACIFIC ISLANDER`, bc$non_asian)
 
 ```
-
-
-
-
-```{r}
-write.csv(covid_monthly,"covid_monthly.csv",row.names = F)
-write.csv(crimes,"crimes.csv",row.names = F)
-
-```
-
-#time series
-
-```{r}
-library(ggplot2);library(ggthemes);library(gridExtra)  # For plots 
-library(quantmod);library(xts);library(zoo) # For using xts class objects
-library(forecast) # Set of forecasting functions
-library(fpp); library(fpp2) # Datasets from Forecasting text by Rob Hyndman
-library(tseries) # for a statistical test
-library(dplyr) # Data wrangling
-```
-
-#create ts object
-```{r}
-
-
-library("xts")
-
-  
-covid$DATE_OF_INTEREST<-as.Date(covid$DATE_OF_INTEREST)  
-covid_ts <- xts(covid$CASE_COUNT, covid$DATE_OF_INTEREST)
-
-  
-is.xts(covid_ts)
-```
-
-```{r}
-plot(covid_ts)
-```
-
-
-
-```{r}
-crimes$Record.Create.Date<-as.Date(crimes$Record.Create.Date)  
-asian <- crimes %>% filter(Bias.Motive.Description == "ANTI-ASIAN")
-```
-
-
-```{r}
-
-asian_ts <- xts(asian)
-is.xts(asian_ts)
-```
-
-
-
-```{r}
- nypd <- read.csv("NYPD_Complaint_Data_Current__Year_To_Date_.csv")
-```
-
-```{r}
-
-```
-
-
-
 
 
 
