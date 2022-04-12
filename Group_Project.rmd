@@ -36,18 +36,28 @@ apply(nypd,
 
 new <- nypd %>% 
   filter(CMPLNT_FR_DT >= "2018-03-01") %>%
-  dplyr::select(CMPLNT_FR_DT, VIC_RACE,VIC_SEX, PD_DESC, SUSP_RACE, SUSP_SEX,) %>%
+  dplyr::select(CMPLNT_FR_DT, VIC_RACE) %>%
   group_by(CMPLNT_FR_DT, VIC_RACE) %>%
   count(VIC_RACE)
 
-str(new)
+new$CMPLNT_FR_DT <- format(as.Date(new$CMPLNT_FR_DT), "%Y-%m")
+
 colnames(new)[1] = "date"
 colnames(new)[2] = "race"
+str_trim(new$race, side = "both")
+
+
+new <- new[-which(new$race == ""), ]
 
 bc <- new %>%
-  filter(date <="2020-03-01")
+  filter(date <"2020-03") %>%
+  group_by(date) %>%
+  count(race)
+
 ac <- new %>%
-  filter(date > "2020-03-01")
+  filter(date >= "2020-03") %>%
+  group_by(date) %>%
+  count(race)
 
 
 
@@ -56,6 +66,7 @@ ac <- new %>%
 
 #Clean data
 ```{r}
+covid <- read.csv(file.choose(), header = T)
 str(covid)
 apply(covid,
       MARGIN = 2, 
@@ -92,27 +103,6 @@ summary(crimes)
 
 ```
 
-
-Data parsing - crimes
-
-```{r}
-nypd <- nypd %>% mutate(CMPLNT_FR_DT = mdy(CMPLNT_FR_DT ))
-nypd$CMPLNT_FR_DT<-as.Date(nypd$CMPLNT_FR_DT)  
-
-```
-
-
-```{r}
-
-apply(nypd,
-      MARGIN = 2, 
-      FUN = function(x) sum(is.na(x)))
-
-```
-```{r}
-new <- nypd %>% filter(CMPLNT_FR_DT >= 01/01/2017) %>% group_by(CMPLNT_FR_DT, VIC_RACE) 
-new <- new %>% count(CMPLNT_NUM)
-```
 
 
 
