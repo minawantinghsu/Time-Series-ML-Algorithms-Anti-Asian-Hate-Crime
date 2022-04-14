@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 ```
 
+## Prepare data for model
 # Load packages
 ```{r}
 library(dplyr)
@@ -47,6 +48,7 @@ new <- new[-which(new$race == ""), ]
 
 ```
 
+
 #before & after covid
 
 ```{r}
@@ -54,7 +56,7 @@ new <- new[-which(new$race == ""), ]
 bc <- new %>%
   filter(date <"2020-03") %>%
   group_by(date) %>%
-  count(race)
+  count(race) 
 
 #ac = after covid from 2020-03 to 2021-12-31
 ac <- new %>%
@@ -62,6 +64,8 @@ ac <- new %>%
   group_by(date) %>%
   count(race)
 ```
+
+
 
 #pivot_wider
 ```{r}
@@ -89,6 +93,103 @@ bc <- bc %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, non_asian)
 cor(bc$`ASIAN / PACIFIC ISLANDER`, bc$non_asian)
 
 ```
+
+The result shows a 0.79 high correlation between asian hate crime and non-asian hate crime. We are confidence to derive the conclusion that other race hate crime is highly correlated with asian hate crime. With this in mind, we can want to use bsts time series model to predict after covid asian hate crime using other race hate crime and compare to actual asian hate crime data. 
+
+
+
+
+## Time Series
+
+#Asian/Non-asian Ratio
+
+
+```{r}
+ac$ratio = round(ac$`ASIAN / PACIFIC ISLANDER`/ac$non_asian,3)
+bc$ratio = round(bc$`ASIAN / PACIFIC ISLANDER`/bc$non_asian,3)
+```
+
+
+#change dataframe to xts format
+
+```{r}
+
+library(xts)
+
+ac$date<-as.Date(ac$date, tryFormats = "%Y-%m")  
+  
+gfg_ts <- xts(gfg_date$val, gfg_date$date)
+gfg_ts    
+  
+is.xts(gfg_ts)
+
+```
+
+
+#bsts model (bc ratio) 
+```{r}
+library(bsts)     # load the bsts package
+
+ss<- AddLocalLinearTrend(list(), bc$`ASIAN / PACIFIC ISLANDER`)
+ss <- AddSeasonal(ss, bc$`ASIAN / PACIFIC ISLANDER`, nseasons = 12)
+model1 <- bsts(bc$`ASIAN / PACIFIC ISLANDER`,
+               state.specification = ss,
+               niter = 1000)
+```
+
+
+#plot bc ratio
+
+Plot before covid 
+```{r}
+plot(model1)
+plot(model1, "components")
+plot(model1, "help")
+```
+#Predict using bc ratio
+
+```{r}
+pred1 <- predict(model1, horizon =  24)
+plot(pred1, plot.original = 120)
+```
+
+#bsts model (bc regression)
+
+```{r}
+model2 <- bsts( `ASIAN / PACIFIC ISLANDER`~ non_asian,
+               state.specification = ss,
+               niter = 1000,
+               data = bc)
+```
+
+
+```{r}
+model3 <- bsts(`ASIAN / PACIFIC ISLANDER`~ non_asian,
+               state.specification = ss,
+               niter = 1000,
+               data = bc,
+               expected.model.size = 5) 
+```
+
+```{r}
+initial.claims
+```
+
+
+#Plot 
+```{r}
+plot(model2, "coef")
+plot(model3, "coef")
+```
+
+```{r}
+CompareBstsModels(list("Model 1" = model1,
+                       "Model 2" = model2,
+                       "Model 3" = model3),
+                  colors = c("black", "red", "blue"))
+```
+
+
 
 
 
