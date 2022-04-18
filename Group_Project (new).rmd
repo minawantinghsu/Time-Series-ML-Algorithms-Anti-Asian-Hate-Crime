@@ -108,16 +108,60 @@ summary(lm1)
 #all crime
 After looking at the correlation of the every other race to asian crime, we find high correlation for all of them. Hence, we decided to use all crime and asian crime as the base for our analysis. 
 
+We created a crime ratio (race crime/all crime) in order to see weather if the percentage of Asian crime is difference with our time series prediction. 
+
 ```{r}
-ac <- ac %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, all)
-bc <- bc %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, all)
+#Asian
+ac_a <- ac %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, all)
+bc_a <- bc %>% dplyr::select(date, `ASIAN / PACIFIC ISLANDER`, all)
+
+ac_a$ratio = round((ac_a$`ASIAN / PACIFIC ISLANDER`/ac_a$all),3)
+bc_a$ratio = round((bc_a$`ASIAN / PACIFIC ISLANDER`/bc_a$all),3)
 ```
 
-#lm2  
 ```{r}
-lm2 = lm(`ASIAN / PACIFIC ISLANDER` ~ all, data = bc)
-summary(lm2)
+#Black
+ac_b <- ac %>% dplyr::select(date, BLACK, all)
+bc_b <- bc %>% dplyr::select(date, BLACK, all)
+
+ac_b$ratio = round((ac_b$BLACK/ac_b$all),3)
+bc_b$ratio = round((bc_b$BLACK/bc_b$all),3)
 ```
+
+```{r}
+#Hispanic
+ac_bh <- ac %>% dplyr::select(date, `BLACK HISPANIC`, `WHITE HISPANIC`, all)
+bc_bh <- bc %>% dplyr::select(date, `BLACK HISPANIC`, `WHITE HISPANIC` , all)
+
+ac_h <- ac_bh %>% mutate(HISPANIC = sum(`BLACK HISPANIC`,`WHITE HISPANIC`)) 
+bc_h <- bc_bh %>% mutate(HISPANIC = sum(`BLACK HISPANIC`,`WHITE HISPANIC`)) 
+
+ac_h$ratio = round((ac_h$HISPANIC/ac_h$all),3)
+bc_h$ratio = round((bc_h$HISPANIC/bc_h$all),3)
+
+
+```
+
+```{r}
+#White
+ac_w <- ac %>% dplyr::select(date, WHITE, all)
+bc_w <- bc %>% dplyr::select(date, WHITE, all)
+
+ac_w$ratio = round((ac_w$WHITE/ac_w$all),3)
+bc_w$ratio = round((bc_w$WHITE/bc_w$all),3)
+```
+
+
+
+```{r}
+#AMERICAN INDIAN/ALASKAN NATIVE
+ac_ai <- ac %>% dplyr::select(date, `AMERICAN INDIAN/ALASKAN NATIVE`, all)
+bc_ai <- bc %>% dplyr::select(date, `AMERICAN INDIAN/ALASKAN NATIVE`, all)
+
+ac_ai$ratio = round((ac_ai$`AMERICAN INDIAN/ALASKAN NATIVE`/ac_ai$all),3)
+bc_ai$ratio = round((bc_ai$`AMERICAN INDIAN/ALASKAN NATIVE`/bc_ai$all),3)
+```
+
 
 
 #before-covid correlation between Anti-Asian crime and all crime
@@ -135,66 +179,172 @@ The result of linear regression shows a high correlation between asian crime and
 
 ## Time Series
 
-#Asian Crime to all crime Ratio
-We created a asian crime ratio (asian crime/all crime) in order to see weather if the percentage of Asian crime is difference with our time series prediction. 
-```{r}
-ac$ratio = round((ac$`ASIAN / PACIFIC ISLANDER`/ac$all),3)
-bc$ratio = round((bc$`ASIAN / PACIFIC ISLANDER`/bc$all),3)
-```
-
-
-
 #change dataframe to xts format
+
 
 ```{r}
 
 library(xts)
 
-ac$date<-as.yearmon(ac$date)
-ac <- xts(ac$ratio, ac$date)
-bc$date<-as.yearmon(bc$date)
-bc <- xts(bc$ratio, bc$date)
+#Asian
+ac_a$date<-as.yearmon(ac_a$date)
+ac_a <- xts(ac_a$ratio, ac_a$date)
+bc_a$date<-as.yearmon(bc_a$date)
+bc_a <- xts(bc_a$ratio, bc_a$date)
   
-colnames(ac)[1] = "ratio"
-colnames(bc)[1] = "ratio"
+colnames(ac_a)[1] = "ratio"
+colnames(bc_a)[1] = "ratio"
+
+#Black
+ac_b$date<-as.yearmon(ac_b$date)
+ac_b <- xts(ac_b$ratio, ac_b$date)
+bc_b$date<-as.yearmon(bc_b$date)
+bc_b <- xts(bc_b$ratio, bc_b$date)
+  
+colnames(ac_b)[1] = "ratio"
+colnames(bc_b)[1] = "ratio"
+
+#Hispanic
+ac_h$date<-as.yearmon(ac_h$date)
+ac_h <- xts(ac_h$ratio,ac_h$date)
+bc_h$date<-as.yearmon(bc_h$date)
+bc_h <- xts(bc_h$ratio, bc_h$date)
+  
+colnames(ac_h)[1] = "ratio"
+colnames(bc_h)[1] = "ratio"
+
+#White
+ac_w$date<-as.yearmon(ac_w$date)
+ac_w <- xts(ac_w$ratio, ac_w$date)
+bc_w$date<-as.yearmon(bc_w$date)
+bc_w <- xts(bc_w$ratio, bc_w$date)
+  
+colnames(ac_w)[1] = "ratio"
+colnames(bc_w)[1] = "ratio"
+
+#American Indian/Alaskan
+
+ac_ai$date<-as.yearmon(ac_ai$date)
+ac_ai <- xts(ac_ai$ratio, ac_ai$date)
+bc_ai$date<-as.yearmon(bc_ai$date)
+bc_ai <- xts(bc_ai$ratio, bc_ai$date)
+  
+colnames(ac_ai)[1] = "ratio"
+colnames(bc_ai)[1] = "ratio"
 
 ```
 
 
+
 #bsts model (bc ratio) 
+
 ```{r}
 library(bsts)     # load the bsts package
 library(zoo)
 
-ss<- AddLocalLinearTrend(list(), bc$ratio)
-ss <- AddSeasonal(ss, bc$ratio, nseasons = 12)
-model1 <- bsts(bc$ratio,
-               state.specification = ss,
+#Asian
+ss_a<- AddLocalLinearTrend(list(), bc_a$ratio)
+ss_a <- AddSeasonal(ss_a, bc_a$ratio, nseasons = 12)
+model_a <- bsts(bc_a$ratio,
+               state.specification = ss_a,
                niter = 1000,
                seed = 5205)
+
+#Black
+ss_b<- AddLocalLinearTrend(list(), bc_b$ratio)
+ss_b <- AddSeasonal(ss_b, bc_b$ratio, nseasons = 12)
+model_b <- bsts(bc_b$ratio,
+               state.specification = ss_b,
+               niter = 1000,
+               seed = 5205)
+
+#Hispanic
+ss_h<- AddLocalLinearTrend(list(), bc_h$ratio)
+ss_h <- AddSeasonal(ss_h, bc_h$ratio, nseasons = 12)
+model_h <- bsts(bc_h$ratio,
+               state.specification = ss_h,
+               niter = 1000,
+               seed = 5205)
+
+#White
+ss_w<- AddLocalLinearTrend(list(), bc_w$ratio)
+ss_w <- AddSeasonal(ss_w, bc_w$ratio, nseasons = 12)
+model_w <- bsts(bc_w$ratio,
+               state.specification = ss_w,
+               niter = 1000,
+               seed = 5205)
+
+#American-indian
+ss_ai<- AddLocalLinearTrend(list(), bc_ai$ratio)
+ss_ai <- AddSeasonal(ss_ai, bc_ai$ratio, nseasons = 12)
+model_ai <- bsts(bc_ai$ratio,
+               state.specification = ss_ai,
+               niter = 1000,
+               seed = 5205)
+
+
 ```
 
 
 #plot bc ratio
 
 Plot before covid 
+
 ```{r}
-plot(model1)
-plot(model1, "components")
-plot(model1, "help")
+#Asian
+plot(model_a)
+plot(model_a, "components")
+plot(model_a, "help")
 
 
 ```
 
+```{r}
+#Black
+plot(model_b)
+plot(model_b, "components")
+plot(model_b, "help")
 
+
+```
+```{r}
+#Hispanic
+plot(model_h)
+plot(model_h, "components")
+plot(model_h, "help")
+
+
+```
+
+```{r}
+#white
+plot(model_w)
+plot(model_w, "components")
+plot(model_w, "help")
+
+
+```
+
+```{r}
+#American Indian
+plot(model_ai)
+plot(model_ai, "components")
+plot(model_ai, "help")
+
+
+```
 
 #Predict using bc ratio
 
+
+
 ```{r}
+#Asian
+
 #jpeg('BTST_Prediction1.jpg')
 
-pred1 <- predict(model1, horizon =  22, seed = 5205)
-plot(pred1, 
+pred_a <- predict(model_a, horizon =  22, seed = 5205)
+plot(pred_a, 
      font = 4,
      main = "BSTS Prediction",
      par(bg = "#f7f7f7"),
@@ -207,14 +357,85 @@ plot(pred1,
 ```
 
 ```{r}
+#Black
+
+#jpeg('BTST_Prediction1.jpg')
+
+pred_b <- predict(model_b, horizon =  22, seed = 5205)
+plot(pred_b, 
+     font = 4,
+     main = "BSTS Prediction",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(-0.4, 1), 
+     plot.original = 60)
+
+#dev.off()
+
+```
+```{r}
+#Hispanic
+#jpeg('BTST_Prediction1.jpg')
+
+pred_h <- predict(model_h, horizon =  22, seed = 5205)
+plot(pred_h, 
+     font = 4,
+     main = "BSTS Prediction",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(-0.4, 1), 
+     plot.original = 60)
+
+#dev.off()
+
+```
+
+```{r}
+#White
+#jpeg('BTST_Prediction1.jpg')
+
+pred_w <- predict(model_w, horizon =  22, seed = 5205)
+plot(pred_w, 
+     font = 4,
+     main = "BSTS Prediction",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(-0.3, 1), 
+     plot.original = 60)
+
+#dev.off()
+
+```
+
+```{r}
+#American Indian
+#jpeg('BTST_Prediction1.jpg')
+
+pred_ai <- predict(model_ai, horizon =  22, seed = 5205)
+plot(pred_ai, 
+     font = 4,
+     main = "BSTS Prediction",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(-0.1, 1), 
+     plot.original = 60)
+
+#dev.off()
+
+```
+
+
+```{r}
 pred1$interval
 ```
 
 
 ```{r}
+#Look closly into BSTS prediction of Asian related crime 
+
 #jpeg('BSTS_Pred_only.jpg')
 
-plot(pred1, 
+plot(pred_a, 
      font = 4,
      main = "BSTS Prediction",
      par(bg = "#f7f7f7"),
@@ -228,43 +449,162 @@ plot(pred1,
 
 
 # ploting the actual ratio after-covid
+
+
 ```{r}
+
+#Asian 
+
 #jpeg('actual1.jpg')
 
-plot(ac,     
+plot(ac_a,     
      font = 4,
      col="red",
      par= "white",
      main = "Actual After Covid Crime Ratio",
      par(bg = "#f7f7f7"),
      xlab = "Time", ylab = "Crime Ratio", 
-     ylim = c(-0.2, 0.4)
+     ylim = c(0, 0.2)
      )
 
 #dev.off()
 ```
 
+```{r}
+#Black
+#jpeg('actual1.jpg')
 
+plot(ac_b,     
+     font = 4,
+     col="red",
+     par= "white",
+     main = "Actual After Covid Crime Ratio",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(0, 0.4)
+     )
+
+#dev.off()
+```
+
+```{r}
+#Hispanic
+#jpeg('actual1.jpg')
+
+plot(ac_h,     
+     font = 4,
+     col="red",
+     par= "white",
+     main = "Actual After Covid Crime Ratio",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(0, 0.4)
+     )
+
+#dev.off()
+```
+
+```{r}
+#White
+#jpeg('actual1.jpg')
+
+plot(ac_w,     
+     font = 4,
+     col="red",
+     par= "white",
+     main = "Actual After Covid Crime Ratio",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(0, 0.4)
+     )
+
+#dev.off()
+```
+
+```{r}
+#American Indian 
+#jpeg('actual1.jpg')
+
+plot(ac_ai,     
+     font = 4,
+     col="red",
+     par= "white",
+     main = "Actual After Covid Crime Ratio",
+     par(bg = "#f7f7f7"),
+     xlab = "Time", ylab = "Crime Ratio", 
+     ylim = c(0, 0.4)
+     )
+
+#dev.off()
+```
 
 #Combine plot bc predtion & ac data
 Here we combine the crime ratio of the after covid asian crime ratio prediction using before covid data and the actual after covid data to see if there is a difference. If we see a major difference, we can assume that covid might have some effects on asian  crime. However, if the two graphs are really similar, then it indicates that covid had no effect on asian  crime.
 
 #get prediction data ready
-```{r}
-pred_df <- data.frame(date = c("2020-03","2020-04", "2020-05", "2020-06","2020-07", "2020-08","2020-09", "2020-10","2020-11", "2020-12" , "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12"), ratio = pred1$mean)
-pred_df$ratio = round(pred_df$ratio,3)
 
-pred_df$date<-as.yearmon(pred_df$date)
-pred_df <- xts(pred_df$ratio, pred_df$date)
-colnames(pred_df)[1] = "ratio"
+
+```{r}
+#Asian
+pred_df_a <- data.frame(date = c("2020-03","2020-04", "2020-05", "2020-06","2020-07", "2020-08","2020-09", "2020-10","2020-11", "2020-12" , "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12"), ratio = pred_a$mean)
+pred_df_a$ratio = round(pred_df_a$ratio,3)
+
+pred_df_a$date<-as.yearmon(pred_df_a$date)
+pred_df_a <- xts(pred_df_a$ratio, pred_df_a$date)
+colnames(pred_df_a)[1] = "ratio"
 ```
+
+
+```{r}
+#Black
+pred_df_b <- data.frame(date = c("2020-03","2020-04", "2020-05", "2020-06","2020-07", "2020-08","2020-09", "2020-10","2020-11", "2020-12" , "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12"), ratio = pred_b$mean)
+pred_df_b$ratio = round(pred_df_b$ratio,3)
+
+pred_df_b$date<-as.yearmon(pred_df_b$date)
+pred_df_b <- xts(pred_df_b$ratio, pred_df_b$date)
+colnames(pred_df_b)[1] = "ratio"
+```
+
+```{r}
+#Hispanic
+pred_df_h <- data.frame(date = c("2020-03","2020-04", "2020-05", "2020-06","2020-07", "2020-08","2020-09", "2020-10","2020-11", "2020-12" , "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12"), ratio = pred_h$mean)
+pred_df_h$ratio = round(pred_df_h$ratio,3)
+
+pred_df_h$date<-as.yearmon(pred_df_h$date)
+pred_df_h <- xts(pred_df_h$ratio, pred_df_h$date)
+colnames(pred_df_h)[1] = "ratio"
+```
+
+```{r}
+#white
+pred_df_w <- data.frame(date = c("2020-03","2020-04", "2020-05", "2020-06","2020-07", "2020-08","2020-09", "2020-10","2020-11", "2020-12" , "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12"), ratio = pred_w$mean)
+pred_df_w$ratio = round(pred_df_w$ratio,3)
+
+pred_df_w$date<-as.yearmon(pred_df_w$date)
+pred_df_w <- xts(pred_df_w$ratio, pred_df_w$date)
+colnames(pred_df_w)[1] = "ratio"
+```
+
+```{r}
+#American Indian
+pred_df_ai <- data.frame(date = c("2020-03","2020-04", "2020-05", "2020-06","2020-07", "2020-08","2020-09", "2020-10","2020-11", "2020-12" , "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12"), ratio = pred_ai$mean)
+pred_df_ai$ratio = round(pred_df_ai$ratio,3)
+
+pred_df_ai$date<-as.yearmon(pred_df_ai$date)
+pred_df_ai <- xts(pred_df_ai$ratio, pred_df_ai$date)
+colnames(pred_df_ai)[1] = "ratio"
+```
+
+
 
 #combine plot ac & bc prediction
 
+
 ```{r}
+#Asian
 #jpeg('combine1.jpg')
 
-plot.zoo(cbind(ac, pred_df), 
+plot.zoo(cbind(ac_a, pred_df_a), 
          plot.type = "single", 
          col = c("red", "blue"),
          main = "Combination",
@@ -277,9 +617,79 @@ legend("bottomright",
 #dev.off()
 ```
 
+```{r}
+#Black
+#jpeg('combine1.jpg')
+
+plot.zoo(cbind(ac_b, pred_df_b), 
+         plot.type = "single", 
+         col = c("red", "blue"),
+         main = "Combination",
+         ylim = c(0,0.4),
+          xlab = "Time", ylab = "Asian Crime Ratio")
+legend("bottomright", 
+       legend = c("Actual Crime Rate","Prediction"),
+       col = c("red","blue"),
+       lwd = 1)
+#dev.off()
+```
 
 
-##Quantify Result
+```{r}
+#Hispanic
+#jpeg('combine1.jpg')
+
+plot.zoo(cbind(ac_h, pred_df_h), 
+         plot.type = "single", 
+         col = c("red", "blue"),
+         main = "Combination",
+         ylim = c(0,0.4),
+          xlab = "Time", ylab = "Asian Crime Ratio")
+legend("bottomright", 
+       legend = c("Actual Crime Rate","Prediction"),
+       col = c("red","blue"),
+       lwd = 1)
+#dev.off()
+```
+
+```{r}
+#White
+#jpeg('combine1.jpg')
+
+plot.zoo(cbind(ac_w, pred_df_w), 
+         plot.type = "single", 
+         col = c("red", "blue"),
+         main = "Combination",
+         ylim = c(0,0.4),
+          xlab = "Time", ylab = "Asian Crime Ratio")
+legend("bottomright", 
+       legend = c("Actual Crime Rate","Prediction"),
+       col = c("red","blue"),
+       lwd = 1)
+#dev.off()
+```
+
+```{r}
+#American-indian
+#jpeg('combine1.jpg')
+
+plot.zoo(cbind(ac_ai, pred_df_ai), 
+         plot.type = "single", 
+         col = c("red", "blue"),
+         main = "Combination",
+         ylim = c(0,0.4),
+          xlab = "Time", ylab = "Asian Crime Ratio")
+legend("bottomright", 
+       legend = c("Actual Crime Rate","Prediction"),
+       col = c("red","blue"),
+       lwd = 1)
+#dev.off()
+```
+
+
+
+
+##Quantify Result - Asian
 
 We#t-distribution
 H0: E(Y1) - E(Y1^) = 0
@@ -293,7 +703,6 @@ According to the t-test result, our p-value < 0.05 hence we reject our H0 hypoth
 ```{r}
 t.test(pred_df$ratio,ac$ratio)
 ```
-
 
 
 
