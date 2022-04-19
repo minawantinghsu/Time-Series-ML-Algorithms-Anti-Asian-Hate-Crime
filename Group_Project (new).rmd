@@ -290,14 +290,30 @@ model_ai <- bsts(bc_ai$ratio,
 
 Plot before covid 
 
+
 ```{r}
 #Asian
-plot(model_a)
-plot(model_a, "components")
-plot(model_a, "help")
+#jpeg('actual1.jpg')
 
+plot(model_a)
+
+#dev.off()
 
 ```
+
+```{r}
+#jpeg('trend_seasonal.jpg')
+plot(model_a, "components")
+#dev.off()
+```
+
+
+
+```{r}
+plot(model_a, "residuals")
+```
+
+
 
 ```{r}
 #Black
@@ -425,9 +441,6 @@ plot(pred_ai,
 ```
 
 
-```{r}
-pred1$interval
-```
 
 
 ```{r}
@@ -701,7 +714,7 @@ With 95% confidence interval
 
 According to the t-test result, our p-value < 0.05 hence we reject our H0 hypothesis, which is there is no difference in the mean towards Asian crime pre-covid and after-covid. Covid-19 indeed had an effect on Asian related crime in New York City. 
 ```{r}
-t.test(pred_df$ratio,ac$ratio)
+t.test(pred_df_a$ratio,ac_a$ratio)
 ```
 
 
